@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wayback CDX API Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 10px;
+            max-width: 600px;
+        }
+        input, select, button {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            word-break: break-word;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Wayback CDX API Generator</h2>
+
+    <label for="url">URL:</label>
+    <input type="text" id="url" placeholder="Enter URL (e.g., archive.org)">
+
+    <label for="matchType">Match Type:</label>
+    <select id="matchType">
+        <option value="exact">Exact</option>
+        <option value="prefix">Prefix</option>
+        <option value="host">Host</option>
+        <option value="domain">Domain</option>
+    </select>
+
+    <label for="limit">Limit:</label>
+    <input type="number" id="limit" placeholder="Number of results (optional)">
+
+    <label for="from">From Date (YYYYMMDDhhmmss):</label>
+    <input type="text" id="from" placeholder="Start date (optional)">
+
+    <label for="to">To Date (YYYYMMDDhhmmss):</label>
+    <input type="text" id="to" placeholder="End date (optional)">
+
+    <label for="fastLatest">Fast Latest:</label>
+    <select id="fastLatest">
+        <option value="false">False</option>
+        <option value="true">True</option>
+    </select>
+
+    <button onclick="generateUrl()">Generate API URL</button>
+
+    <h3>Generated API URL:</h3>
+    <div id="output"></div>
+
+    <script>
+        function generateUrl() {
+            let baseUrl = "http://web.archive.org/cdx/search/cdx?";
+            let url = document.getElementById("url").value.trim();
+            let matchType = document.getElementById("matchType").value;
+            let limit = document.getElementById("limit").value.trim();
+            let from = document.getElementById("from").value.trim();
+            let to = document.getElementById("to").value.trim();
+            let fastLatest = document.getElementById("fastLatest").value;
+
+            if (!url) {
+                alert("Please enter a URL.");
+                return;
+            }
+
+            let params = [`url=${encodeURIComponent(url)}`];
+
+            if (matchType !== "exact") params.push(`matchType=${matchType}`);
+            if (limit) params.push(`limit=${limit}`);
+            if (from) params.push(`from=${from}`);
+            if (to) params.push(`to=${to}`);
+            if (fastLatest === "true") params.push("fastLatest=true");
+
+            let apiUrl = baseUrl + params.join("&");
+
+            document.getElementById("output").innerHTML = `<a href="${apiUrl}" target="_blank">${apiUrl}</a>`;
+        }
+    </script>
+
+</body>
+</html>
