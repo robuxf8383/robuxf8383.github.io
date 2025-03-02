@@ -32,6 +32,11 @@
             background-color: #f8f9fa;
             border: 1px solid #ccc;
         }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -49,50 +54,19 @@
         <option value="domain">Domain</option>
     </select>
 
-    <label for="limit">Limit:</label>
-    <input type="number" id="limit" placeholder="Number of results (optional)">
-
     <label for="from">From Date (YYYYMMDDhhmmss):</label>
     <input type="text" id="from" placeholder="Start date (optional)">
 
     <label for="to">To Date (YYYYMMDDhhmmss):</label>
     <input type="text" id="to" placeholder="End date (optional)">
 
-    <label for="fastLatest">Fast Latest:</label>
-    <select id="fastLatest">
-        <option value="">Default</option>
-        <option value="true">True</option>
-    </select>
+    <label for="limit">Limit:</label>
+    <input type="number" id="limit" placeholder="Number of results (optional)">
 
-    <label for="output">Output Format:</label>
-    <select id="output">
-        <option value="">Default (plain text)</option>
-        <option value="json">JSON</option>
-    </select>
-
-    <label for="fields">Fields (comma-separated):</label>
-    <input type="text" id="fields" placeholder="timestamp,original,mimetype,statuscode,digest,length">
-
-    <label for="filters">Filters (comma-separated key:value):</label>
-    <input type="text" id="filters" placeholder="statuscode:200, mimetype:text/html">
-
-    <label for="collapse">Collapse (comma-separated):</label>
-    <input type="text" id="collapse" placeholder="timestamp:10, digest">
-
-    <label for="page">Page Number:</label>
-    <input type="number" id="page" placeholder="Start at page (optional)">
-
-    <label for="pageSize">Page Size:</label>
-    <input type="number" id="pageSize" placeholder="Results per page (optional)">
-
-    <label for="showResumeKey">Show Resume Key:</label>
-    <select id="showResumeKey">
-        <option value="">Default</option>
-        <option value="true">True</option>
-    </select>
-
-    <label for="resumeKey">Resume Key:</label>
-    <input type="text" id="resumeKey" placeholder="Resume key from previous search">
+    <div class="checkbox-container">
+        <input type="checkbox" id="fastLatest">
+        <label for="fastLatest">Enable Fast Latest</label>
+    </div>
 
     <button onclick="generateUrl()">Generate API URL</button>
 
@@ -114,49 +88,20 @@
             let matchType = document.getElementById("matchType").value;
             if (matchType !== "exact") params.push(`matchType=${matchType}`);
 
-            let limit = document.getElementById("limit").value.trim();
-            if (limit) params.push(`limit=${limit}`);
-
             let from = document.getElementById("from").value.trim();
             if (from) params.push(`from=${from}`);
 
             let to = document.getElementById("to").value.trim();
             if (to) params.push(`to=${to}`);
 
-            let fastLatest = document.getElementById("fastLatest").value;
-            if (fastLatest === "true") params.push("fastLatest=true");
+            // Ensure fl=original&collapse=urlkey appears before limit
+            params.push("fl=original&collapse=urlkey");
 
-            let output = document.getElementById("output").value;
-            if (output) params.push(`output=${output}`);
+            let limit = document.getElementById("limit").value.trim();
+            if (limit) params.push(`limit=${limit}`);
 
-            let fields = document.getElementById("fields").value.trim();
-            if (fields) params.push(`fl=${encodeURIComponent(fields)}`);
-
-            let filters = document.getElementById("filters").value.trim();
-            if (filters) {
-                filters.split(",").forEach(filter => {
-                    params.push(`filter=${encodeURIComponent(filter.trim())}`);
-                });
-            }
-
-            let collapse = document.getElementById("collapse").value.trim();
-            if (collapse) {
-                collapse.split(",").forEach(col => {
-                    params.push(`collapse=${encodeURIComponent(col.trim())}`);
-                });
-            }
-
-            let page = document.getElementById("page").value.trim();
-            if (page) params.push(`page=${page}`);
-
-            let pageSize = document.getElementById("pageSize").value.trim();
-            if (pageSize) params.push(`pageSize=${pageSize}`);
-
-            let showResumeKey = document.getElementById("showResumeKey").value;
-            if (showResumeKey === "true") params.push("showResumeKey=true");
-
-            let resumeKey = document.getElementById("resumeKey").value.trim();
-            if (resumeKey) params.push(`resumeKey=${encodeURIComponent(resumeKey)}`);
+            let fastLatestChecked = document.getElementById("fastLatest").checked;
+            if (fastLatestChecked) params.push("fastLatest=true");
 
             let apiUrl = baseUrl + params.join("&");
             document.getElementById("output").innerHTML = `<a href="${apiUrl}" target="_blank">${apiUrl}</a>`;
