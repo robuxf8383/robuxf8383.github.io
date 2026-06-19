@@ -5,14 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subdomain Index Generator</title>
     <style>
+        /* CSS Variables for Theming */
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --card-bg: #ffffff;
+            --border-color: #ccc;
+            --input-bg: #ffffff;
+            --btn-bg: #0056b3;
+            --btn-hover: #004494;
+            --link-color: #0000ee;
+            --nginx-text: #000;
+            --hr-color: #000;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --border-color: #444;
+            --input-bg: #2a2a2a;
+            --btn-bg: #007bff;
+            --btn-hover: #0056b3;
+            --link-color: #58a6ff;
+            --nginx-text: #e0e0e0;
+            --hr-color: #555;
+        }
+
         /* Mobile-friendly base styles */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             padding: 20px;
             max-width: 900px;
             margin: auto;
-            background-color: #f4f4f9;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
         }
         
         h2 { margin-top: 0; }
@@ -22,11 +50,30 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            background: #ffffff;
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0.8;
         }
 
         input, textarea, select, button {
@@ -34,8 +81,10 @@
             font-size: 16px;
             width: 100%;
             box-sizing: border-box;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
         }
         
         textarea {
@@ -45,7 +94,7 @@
         }
 
         button {
-            background-color: #0056b3;
+            background-color: var(--btn-bg);
             color: white;
             border: none;
             cursor: pointer;
@@ -54,24 +103,30 @@
         }
 
         button:hover {
-            background-color: #004494;
+            background-color: var(--btn-hover);
         }
 
         /* Nginx Style Output */
         #output-container {
-            display: none; /* Hidden until generated */
-            background-color: #ffffff;
-            padding: 20px;
+            display: none; 
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            overflow-x: auto; /* Allows horizontal scroll on mobile */
+            overflow-x: auto; 
+            transition: padding 0.2s;
         }
 
         #nginx-view {
             font-family: "Courier New", Courier, monospace;
             font-size: 14px;
-            white-space: pre; /* Essential for Nginx formatting */
-            color: #000;
+            color: var(--nginx-text);
+        }
+
+        #nginx-view pre {
+            white-space: pre; 
+            margin: 0;
+            transition: line-height 0.2s;
         }
 
         #nginx-view h1 {
@@ -83,12 +138,12 @@
 
         #nginx-view hr {
             border: none;
-            border-top: 1px solid #000;
+            border-top: 1px solid var(--hr-color);
             margin: 10px 0;
         }
 
         #nginx-view a {
-            color: #0000ee;
+            color: var(--link-color);
             text-decoration: none;
         }
 
@@ -102,26 +157,73 @@
     <h2>Subdomain Index Generator</h2>
     
     <div class="controls">
-        <label for="baseDomain" style="display:none;">Base Domain</label>
-        <input type="text" id="baseDomain" placeholder="Base Domain (e.g., corusent.com)" required>
+        <div class="settings-grid">
+            <div class="input-group">
+                <label for="themeToggle">Site Theme</label>
+                <select id="themeToggle" onchange="updateTheme()">
+                    <option value="light">Light Mode</option>
+                    <option value="dark">Dark Mode</option>
+                </select>
+            </div>
+            
+            <div class="input-group">
+                <label for="baseDomain">Base Domain</label>
+                <input type="text" id="baseDomain" placeholder="e.g., corusent.com" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="protocol">Protocol</label>
+                <select id="protocol">
+                    <option value="https://">HTTPS (Port 443)</option>
+                    <option value="http://">HTTP (Port 80)</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="sidePadding">Index Side Padding (px)</label>
+                <input type="number" id="sidePadding" value="20" min="0" oninput="updatePadding()">
+            </div>
+
+            <div class="input-group">
+                <label for="heightPadding">Index Line Height (px)</label>
+                <input type="number" id="heightPadding" value="18" min="10" oninput="updatePadding()">
+            </div>
+        </div>
         
-        <label for="protocol" style="display:none;">Protocol</label>
-        <select id="protocol">
-            <option value="https://">HTTPS (Port 443)</option>
-            <option value="http://">HTTP (Port 80)</option>
-        </select>
-        
-        <label for="jsonInput" style="display:none;">Raw JSON</label>
-        <textarea id="jsonInput" placeholder="Paste Security Trails JSON response here..." required></textarea>
+        <div class="input-group">
+            <label for="jsonInput">Raw JSON Response</label>
+            <textarea id="jsonInput" placeholder="Paste Security Trails JSON response here..." required></textarea>
+        </div>
         
         <button onclick="generateNginxIndex()">Generate Nginx Index</button>
     </div>
 
-    <div id="output-container">
-        <div id="nginx-view"></div>
+    <div id="output-container" style="padding: 20px;">
+        <div id="nginx-view">
+            <pre id="nginx-pre" style="line-height: 18px;"></pre>
+        </div>
     </div>
 
     <script>
+        // Set initial padding based on input defaults
+        function updatePadding() {
+            const sidePad = document.getElementById('sidePadding').value || 0;
+            const heightPad = document.getElementById('heightPadding').value || 18;
+            
+            document.getElementById('output-container').style.padding = `20px ${sidePad}px`;
+            
+            const preElement = document.getElementById('nginx-pre');
+            if (preElement) {
+                preElement.style.lineHeight = `${heightPad}px`;
+            }
+        }
+
+        // Toggle light and dark mode CSS variables
+        function updateTheme() {
+            const theme = document.getElementById('themeToggle').value;
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+
         function getFormattedNginxDate() {
             const d = new Date();
             const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -137,8 +239,8 @@
             const domainStr = document.getElementById('baseDomain').value.trim();
             const protocol = document.getElementById('protocol').value;
             const jsonStr = document.getElementById('jsonInput').value.trim();
-            const outputDiv = document.getElementById('nginx-view');
             const container = document.getElementById('output-container');
+            const outputDiv = document.getElementById('nginx-view');
 
             if (!domainStr || !jsonStr) {
                 alert("Please provide both the base domain and the JSON payload.");
@@ -148,18 +250,14 @@
             try {
                 const data = JSON.parse(jsonStr);
                 
-                // Validate if subdomains exist in the payload
                 if (!data.subdomains || !Array.isArray(data.subdomains)) {
                     throw new Error("The JSON provided does not contain a valid 'subdomains' array.");
                 }
 
                 let subs = data.subdomains;
-                
-                // Nginx autoindex sorts alphabetically
                 subs.sort();
 
-                // Start building the Nginx HTML structure
-                let html = `<h1>Index of /${domainStr}</h1><hr><pre><a href="../">../</a>\n`;
+                let html = `<h1>Index of /${domainStr}</h1><hr><pre id="nginx-pre"><a href="../">../</a>\n`;
 
                 const dateStr = getFormattedNginxDate();
 
@@ -167,11 +265,9 @@
                     const fqdn = `${sub}.${domainStr}`;
                     const url = `${protocol}${fqdn}`;
                     
-                    // Create the clickable link opening in a new tab
                     const linkHtml = `<a href="${url}" target="_blank" rel="noopener">${fqdn}/</a>`;
                     
-                    // Calculate spacing to align the timestamp columns perfectly (Nginx standard is around 50 chars)
-                    const textLength = fqdn.length + 1; // +1 for the trailing slash
+                    const textLength = fqdn.length + 1; 
                     const padLength = Math.max(50 - textLength, 2);
                     const padding = ' '.repeat(padLength);
                     
@@ -180,17 +276,22 @@
 
                 html += `</pre><hr>`;
 
-                // Render it to the DOM
                 outputDiv.innerHTML = html;
                 container.style.display = 'block';
                 
-                // Scroll down to the results slightly to help mobile users
+                // Re-apply padding settings to the newly generated <pre> block
+                updatePadding();
+                
                 container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             } catch (e) {
                 alert("Error parsing JSON: " + e.message);
             }
         }
+
+        // Initialize state on load
+        updateTheme();
+        updatePadding();
     </script>
 
 </body>
