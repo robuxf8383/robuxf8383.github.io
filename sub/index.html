@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subdomain Index Generator</title>
+    <style>
+        /* Mobile-friendly base styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        
+        h2 { margin-top: 0; }
+        
+        /* Control Panel */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        input, textarea, select, button {
+            padding: 12px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        textarea {
+            height: 180px;
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        button {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #004494;
+        }
+
+        /* Nginx Style Output */
+        #output-container {
+            display: none; /* Hidden until generated */
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-x: auto; /* Allows horizontal scroll on mobile */
+        }
+
+        #nginx-view {
+            font-family: "Courier New", Courier, monospace;
+            font-size: 14px;
+            white-space: pre; /* Essential for Nginx formatting */
+            color: #000;
+        }
+
+        #nginx-view h1 {
+            font-weight: normal;
+            font-size: 24px;
+            margin: 0 0 10px 0;
+            font-family: "Times New Roman", Times, serif;
+        }
+
+        #nginx-view hr {
+            border: none;
+            border-top: 1px solid #000;
+            margin: 10px 0;
+        }
+
+        #nginx-view a {
+            color: #0000ee;
+            text-decoration: none;
+        }
+
+        #nginx-view a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Subdomain Index Generator</h2>
+    
+    <div class="controls">
+        <label for="baseDomain" style="display:none;">Base Domain</label>
+        <input type="text" id="baseDomain" placeholder="Base Domain (e.g., corusent.com)" required>
+        
+        <label for="protocol" style="display:none;">Protocol</label>
+        <select id="protocol">
+            <option value="https://">HTTPS (Port 443)</option>
+            <option value="http://">HTTP (Port 80)</option>
+        </select>
+        
+        <label for="jsonInput" style="display:none;">Raw JSON</label>
+        <textarea id="jsonInput" placeholder="Paste Security Trails JSON response here..." required></textarea>
+        
+        <button onclick="generateNginxIndex()">Generate Nginx Index</button>
+    </div>
+
+    <div id="output-container">
+        <div id="nginx-view"></div>
+    </div>
+
+    <script>
+        function getFormattedNginxDate() {
+            const d = new Date();
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const day = d.getDate().toString().padStart(2, '0');
+            const month = months[d.getMonth()];
+            const year = d.getFullYear();
+            const hours = d.getHours().toString().padStart(2, '0');
+            const mins = d.getMinutes().toString().padStart(2, '0');
+            return `${day}-${month}-${year} ${hours}:${mins}`;
+        }
+
+        function generateNginxIndex() {
+            const domainStr = document.getElementById('baseDomain').value.trim();
+            const protocol = document.getElementById('protocol').value;
+            const jsonStr = document.getElementById('jsonInput').value.trim();
+            const outputDiv = document.getElementById('nginx-view');
+            const container = document.getElementById('output-container');
+
+            if (!domainStr || !jsonStr) {
+                alert("Please provide both the base domain and the JSON payload.");
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonStr);
+                
+                // Validate if subdomains exist in the payload
+                if (!data.subdomains || !Array.isArray(data.subdomains)) {
+                    throw new Error("The JSON provided does not contain a valid 'subdomains' array.");
+                }
+
+                let subs = data.subdomains;
+                
+                // Nginx autoindex sorts alphabetically
+                subs.sort();
+
+                // Start building the Nginx HTML structure
+                let html = `<h1>Index of /${domainStr}</h1><hr><pre><a href="../">../</a>\n`;
+
+                const dateStr = getFormattedNginxDate();
+
+                subs.forEach(sub => {
+                    const fqdn = `${sub}.${domainStr}`;
+                    const url = `${protocol}${fqdn}`;
+                    
+                    // Create the clickable link opening in a new tab
+                    const linkHtml = `<a href="${url}" target="_blank" rel="noopener">${fqdn}/</a>`;
+                    
+                    // Calculate spacing to align the timestamp columns perfectly (Nginx standard is around 50 chars)
+                    const textLength = fqdn.length + 1; // +1 for the trailing slash
+                    const padLength = Math.max(50 - textLength, 2);
+                    const padding = ' '.repeat(padLength);
+                    
+                    html += `${linkHtml}${padding}${dateStr}                   -\n`;
+                });
+
+                html += `</pre><hr>`;
+
+                // Render it to the DOM
+                outputDiv.innerHTML = html;
+                container.style.display = 'block';
+                
+                // Scroll down to the results slightly to help mobile users
+                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            } catch (e) {
+                alert("Error parsing JSON: " + e.message);
+            }
+        }
+    </script>
+
+</body>
+</html>
